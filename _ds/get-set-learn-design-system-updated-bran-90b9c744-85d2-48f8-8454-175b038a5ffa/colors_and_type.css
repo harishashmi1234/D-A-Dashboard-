@@ -1,0 +1,272 @@
+/* ============================================================
+   Get Set Learn — Colors & Type tokens
+   Source: Get Set Learn Brand Guidelines (Sep 2022)
+   ============================================================ */
+
+/* ------------------------------------------------------------
+   FONTS
+   The brand specifies four typefaces:
+     • Gluten       — child-centered display / wordmark (Google Fonts)
+     • Montserrat   — headlines, key terms (Google Fonts)
+     • Proxima Nova — body & long-form (NOT on Google Fonts → using
+                      Nunito Sans as nearest open substitute. Swap
+                      in licensed Proxima Nova when available.)
+     • Open Sans    — body text in PowerPoint / docs (Google Fonts)
+   ------------------------------------------------------------ */
+@import url('https://fonts.googleapis.com/css2?family=Gluten:wght@400;500;600;700;800&family=Montserrat:wght@400;500;600;700;800;900&family=Nunito+Sans:wght@400;500;600;700;800&family=Open+Sans:wght@400;500;600;700&display=swap');
+
+:root {
+  /* ---------- PRIMARY COLORS ---------- */
+  --gsl-turquoise: #00D8B9;   /* Turquoise Sea — primary accent  */
+  --gsl-azure:     #073393;   /* Azure Blue    — wordmark, primary fg */
+  --gsl-black:     #212121;   /* Cool black    — body text */
+  --gsl-white:     #F8F8FF;   /* Cool white    — primary background */
+
+  /* ---------- SECONDARY (PROGRAM) COLORS ---------- */
+  --gsl-orange: #FF934F;      /* STEAM & Robotics — energy */
+  --gsl-pink:   #FFB2E6;      /* Life Skills      — youth */
+  --gsl-purple: #A682FF;      /* Entrepreneurship — creativity */
+
+  /* ---------- TINTS / SHADES (linear stops at 20%) ---------- */
+  --gsl-turquoise-100: #CCF7F1;
+  --gsl-turquoise-200: #99EFE3;
+  --gsl-turquoise-300: #66E7D5;
+  --gsl-turquoise-400: #33DFC7;
+  --gsl-turquoise-500: #00D8B9;
+  --gsl-turquoise-600: #00AD94;
+  --gsl-turquoise-700: #00826F;
+  --gsl-turquoise-800: #00564A;
+  --gsl-turquoise-900: #002B25;
+
+  --gsl-azure-100: #CDD6E9;
+  --gsl-azure-200: #9BADD4;
+  --gsl-azure-300: #6884BE;
+  --gsl-azure-400: #365BA9;
+  --gsl-azure-500: #073393;
+  --gsl-azure-600: #062976;
+  --gsl-azure-700: #051F58;
+  --gsl-azure-800: #03143B;
+  --gsl-azure-900: #020A1D;
+
+  --gsl-orange-100: #FFE9D9;
+  --gsl-orange-200: #FFD4B3;
+  --gsl-orange-300: #FFBE8C;
+  --gsl-orange-400: #FFA866;
+  --gsl-orange-500: #FF934F;
+  --gsl-orange-600: #CC763F;
+  --gsl-orange-700: #99582F;
+  --gsl-orange-800: #663B20;
+  --gsl-orange-900: #331D10;
+
+  --gsl-pink-100:   #FFF0FA;
+  --gsl-pink-200:   #FFE0F5;
+  --gsl-pink-300:   #FFD1F0;
+  --gsl-pink-400:   #FFC1EB;
+  --gsl-pink-500:   #FFB2E6;
+  --gsl-pink-600:   #CC8EB8;
+  --gsl-pink-700:   #996B8A;
+  --gsl-pink-800:   #66475C;
+  --gsl-pink-900:   #33232E;
+
+  --gsl-purple-100: #EDE6FF;
+  --gsl-purple-200: #DBCDFF;
+  --gsl-purple-300: #C9B4FF;
+  --gsl-purple-400: #B79BFF;
+  --gsl-purple-500: #A682FF;
+  --gsl-purple-600: #8568CC;
+  --gsl-purple-700: #644E99;
+  --gsl-purple-800: #423466;
+  --gsl-purple-900: #211A33;
+
+  /* ---------- NEUTRALS ---------- */
+  --gsl-neutral-50:  #FBFBFD;
+  --gsl-neutral-100: #F4F4F7;
+  --gsl-neutral-200: #E6E6EB;
+  --gsl-neutral-300: #CFCFD6;
+  --gsl-neutral-400: #9C9CA6;
+  --gsl-neutral-500: #6B6B75;
+  --gsl-neutral-600: #4A4A52;
+  --gsl-neutral-700: #2F2F36;
+  --gsl-neutral-800: #212121;
+  --gsl-neutral-900: #0F0F12;
+
+  /* ---------- SEMANTIC COLOR TOKENS ---------- */
+  --fg-1: var(--gsl-black);        /* primary text */
+  --fg-2: var(--gsl-neutral-600);  /* secondary text */
+  --fg-3: var(--gsl-neutral-500);  /* tertiary / meta */
+  --fg-link: var(--gsl-azure);
+  --fg-on-dark: var(--gsl-white);
+  --fg-brand: var(--gsl-azure);
+  --fg-accent: var(--gsl-turquoise);
+
+  --bg-1: var(--gsl-white);        /* page background */
+  --bg-2: var(--gsl-neutral-50);   /* subtle surface */
+  --bg-3: var(--gsl-neutral-100);  /* sunken surface */
+  --bg-brand: var(--gsl-azure);
+  --bg-accent: var(--gsl-turquoise);
+
+  --border-1: var(--gsl-neutral-200);
+  --border-2: var(--gsl-neutral-300);
+  --border-strong: var(--gsl-black);
+
+  --success: #1FAE6A;
+  --warning: var(--gsl-orange);
+  --danger:  #E5484D;
+  --info:    var(--gsl-azure);
+
+  /* Program category accents (semantic aliases) */
+  --program-steam:    var(--gsl-orange);
+  --program-life:     var(--gsl-pink);
+  --program-entre:    var(--gsl-purple);
+  --program-ai:       var(--gsl-azure);
+
+  /* ---------- FONT FAMILIES ---------- */
+  --font-display: 'Gluten', 'Comic Neue', 'Comic Sans MS', cursive;        /* logo & playful display */
+  --font-heading: 'Montserrat', 'Helvetica Neue', system-ui, sans-serif;   /* headlines */
+  --font-body:    'Nunito Sans', 'Proxima Nova', 'Helvetica Neue', system-ui, sans-serif;  /* long-form */
+  --font-slide:   'Open Sans', system-ui, sans-serif;                      /* slide decks */
+  --font-mono:    'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* ---------- TYPE SCALE (px @ 16px base) ---------- */
+  --fs-display-xl: 88px; --lh-display-xl: 0.95;
+  --fs-display-lg: 64px; --lh-display-lg: 1.0;
+  --fs-display-md: 48px; --lh-display-md: 1.05;
+
+  --fs-h1: 40px; --lh-h1: 1.15;
+  --fs-h2: 32px; --lh-h2: 1.2;
+  --fs-h3: 24px; --lh-h3: 1.25;
+  --fs-h4: 20px; --lh-h4: 1.3;
+  --fs-h5: 18px; --lh-h5: 1.35;
+
+  --fs-body-lg: 18px; --lh-body-lg: 1.55;
+  --fs-body:    16px; --lh-body:    1.55;
+  --fs-body-sm: 14px; --lh-body-sm: 1.5;
+  --fs-caption: 13px; --lh-caption: 1.4;
+  --fs-overline:12px; --lh-overline:1.3;
+
+  /* ---------- WEIGHTS ---------- */
+  --fw-regular: 400;
+  --fw-medium:  500;
+  --fw-semibold:600;
+  --fw-bold:    700;
+  --fw-extrabold:800;
+  --fw-black:   900;
+
+  /* ---------- SPACING (4px base) ---------- */
+  --sp-0:  0;
+  --sp-1:  4px;
+  --sp-2:  8px;
+  --sp-3:  12px;
+  --sp-4:  16px;
+  --sp-5:  20px;
+  --sp-6:  24px;
+  --sp-8:  32px;
+  --sp-10: 40px;
+  --sp-12: 48px;
+  --sp-16: 64px;
+  --sp-20: 80px;
+  --sp-24: 96px;
+
+  /* ---------- RADII ---------- */
+  --r-xs: 6px;
+  --r-sm: 10px;
+  --r-md: 16px;
+  --r-lg: 24px;
+  --r-xl: 32px;
+  --r-pill: 999px;
+  --r-circle: 50%;
+
+  /* ---------- SHADOWS ---------- */
+  --shadow-xs: 0 1px 2px rgba(7,51,147,0.06);
+  --shadow-sm: 0 2px 6px rgba(7,51,147,0.08), 0 1px 2px rgba(7,51,147,0.06);
+  --shadow-md: 0 8px 20px rgba(7,51,147,0.10), 0 2px 4px rgba(7,51,147,0.06);
+  --shadow-lg: 0 20px 40px rgba(7,51,147,0.14), 0 4px 10px rgba(7,51,147,0.06);
+  --shadow-pop: 0 10px 0 0 var(--gsl-azure);  /* playful "stacked" shadow for cards/buttons */
+  --shadow-pop-turq: 0 10px 0 0 var(--gsl-turquoise);
+
+  /* ---------- TRANSITIONS ---------- */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --dur-fast: 120ms;
+  --dur-base: 200ms;
+  --dur-slow: 320ms;
+}
+
+/* ============================================================
+   SEMANTIC TYPE STYLES — apply directly to elements.
+   ============================================================ */
+
+html { color: var(--fg-1); background: var(--bg-1); }
+
+body {
+  font-family: var(--font-body);
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+  font-weight: var(--fw-regular);
+  color: var(--fg-1);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+.display-xl,
+.display-lg,
+.display-md,
+h1, h2, h3, h4, h5 {
+  font-family: var(--font-heading);
+  font-weight: var(--fw-extrabold);
+  color: var(--fg-brand);
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+
+.display-xl { font-size: var(--fs-display-xl); line-height: var(--lh-display-xl); font-weight: var(--fw-black); letter-spacing: -0.02em; }
+.display-lg { font-size: var(--fs-display-lg); line-height: var(--lh-display-lg); font-weight: var(--fw-black); letter-spacing: -0.02em; }
+.display-md { font-size: var(--fs-display-md); line-height: var(--lh-display-md); }
+
+h1, .h1 { font-size: var(--fs-h1); line-height: var(--lh-h1); }
+h2, .h2 { font-size: var(--fs-h2); line-height: var(--lh-h2); }
+h3, .h3 { font-size: var(--fs-h3); line-height: var(--lh-h3); font-weight: var(--fw-bold); }
+h4, .h4 { font-size: var(--fs-h4); line-height: var(--lh-h4); font-weight: var(--fw-bold); }
+h5, .h5 { font-size: var(--fs-h5); line-height: var(--lh-h5); font-weight: var(--fw-bold); }
+
+.font-display { font-family: var(--font-display); font-weight: var(--fw-bold); }
+
+p, .body {
+  font-family: var(--font-body);
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+  color: var(--fg-1);
+  text-wrap: pretty;
+}
+
+.body-lg { font-size: var(--fs-body-lg); line-height: var(--lh-body-lg); }
+.body-sm { font-size: var(--fs-body-sm); line-height: var(--lh-body-sm); }
+
+.caption { font-size: var(--fs-caption); line-height: var(--lh-caption); color: var(--fg-2); }
+
+.overline {
+  font-family: var(--font-heading);
+  font-size: var(--fs-overline);
+  line-height: var(--lh-overline);
+  font-weight: var(--fw-bold);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--fg-2);
+}
+
+code, kbd, samp, pre {
+  font-family: var(--font-mono);
+  font-size: 0.92em;
+}
+
+a {
+  color: var(--fg-link);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 2px;
+  text-decoration-color: var(--gsl-turquoise);
+  transition: color var(--dur-base) var(--ease-out);
+}
+a:hover { color: var(--gsl-turquoise-700); }
+
+::selection { background: var(--gsl-turquoise); color: var(--gsl-azure); }

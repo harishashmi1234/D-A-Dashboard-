@@ -1,0 +1,24 @@
+# Source material, not part of the site. These stay in OneDrive — they are
+# the originals the catalogue was built from, and none are needed to build
+# or serve the hub. (Comments must be on their own line: git treats a "#"
+# mid-line as part of the pattern, not as a comment.)
+
+# 43 MB raw drop; already renamed into assets/
+uploads/
+
+# 12 MB lockup masters; copied and thumbnailed into assets/lockups/
+Additional Assets/
+
+# 4.8 MB SharePoint inventory; already distilled into assets.js
+sharepoint data.xlsx
+
+# Superseded design-canvas version of the dashboard
+Asset Hub.dc.html
+support.js
+.thumbnail
+
+# Local
+node_modules/
+.vercel
+.DS_Store
+Thumbs.db

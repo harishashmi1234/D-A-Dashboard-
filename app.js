@@ -69,6 +69,62 @@
     // navigator.sendBeacon("/api/log", JSON.stringify(rec));
   }
 
+  /* Every download of one specific item, newest first. */
+  function historyFor(product, item) {
+    return (store.history || [])
+      .filter(function (r) { return r.product === product && r.item === item; })
+      .sort(function (a, b) { return b.ts.localeCompare(a.ts); });
+  }
+
+  function stamp(ts) {
+    var d = new Date(ts);
+    if (isNaN(d)) return ts;
+    return d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) +
+           ", " + d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+  }
+
+  /* The download record for one card. Admin only — a manager has no reason
+     to see who else has been sending which brochure. */
+  function historyBlock(product, item, compact) {
+    if (!can("history")) return "";
+    var rows = historyFor(product, item);
+    var key = product + "||" + item;
+
+    if (!rows.length) {
+      return '<div class="hist hist--none' + (compact ? " hist--compact" : "") + '">' +
+        'Not downloaded yet</div>';
+    }
+
+    var last = rows[0];
+    return '<div class="hist' + (compact ? " hist--compact" : "") + '">' +
+      '<button class="hist__bar" data-hist="' + esc(key) + '" aria-expanded="false">' +
+        '<span class="hist__chev" aria-hidden="true">' +
+          '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
+          'stroke-width="3" stroke-linecap="round" stroke-linejoin="round">' +
+          '<path d="M9 6l6 6-6 6"></path></svg></span>' +
+        '<span class="hist__n">' + rows.length +
+          (rows.length === 1 ? " download" : " downloads") + '</span>' +
+        '<span class="hist__last">' + esc(shortWho(last.email)) + ' · ' + esc(stamp(last.ts)) + '</span>' +
+      '</button>' +
+      '<ul class="hist__list" hidden>' +
+        rows.map(function (r) {
+          return '<li>' +
+            '<span class="hist__who" title="' + esc(r.email || "not signed in") + '">' +
+              esc(r.email || "— not signed in —") + '</span>' +
+            '<span class="hist__when">' + esc(stamp(r.ts)) + '</span>' +
+            (r.kind === "viewed" ? '<span class="hist__kind">viewed</span>' : '') +
+          '</li>';
+        }).join("") +
+      '</ul>' +
+    '</div>';
+  }
+
+  /* Long addresses squeeze the one-line summary — show the name part there. */
+  function shortWho(email) {
+    if (!email) return "not signed in";
+    return email.length > 22 ? email.split("@")[0] : email;
+  }
+
   /* ---------- products (catalogue + locally added) ---------- */
   function products() { return C.products.concat(store.offerings || []); }
   var PRODUCTS = {}, SLOT = {};
@@ -83,7 +139,6 @@
 
   function readHash() {
     var h = decodeURIComponent(location.hash.replace(/^#/, ""));
-    if (h === "history") return can("history") ? "history" : "overview";
     return h && h !== "overview" ? h : "overview";
   }
 
@@ -207,18 +262,7 @@
     if (can("addOffering")) {
       html += '<button class="nav__add" data-new-offering>' + I_ADD + 'Add an offering</button>';
     }
-    html += '</div>';
-
-    if (can("history")) {
-      var n = (store.history || []).length;
-      html += '<div class="nav__group"><div class="nav__label overline">Admin</div>' +
-        '<button class="nav__item" data-view="history" aria-current="' + (state.view === "history") + '">' +
-          '<span class="nav__dot" style="background:' + (state.view === "history" ? "#00D8B9" : "#8A8A99") + '"></span>' +
-          '<span class="nav__name">History</span>' +
-          (n ? '<span class="nav__count nav__count--has">' + n + '</span>' : '') +
-        '</button></div>';
-    }
-    return html;
+    return html + '</div>';
   }
 
   /* ---------- kit card ---------- */
@@ -259,6 +303,7 @@
             'aria-label="Replace link">' + I_EDIT + '</button>'
           : '') +
       '</div>' +
+      historyBlock(a.productName, a.slotLabel) +
     '</article>';
   }
 
@@ -300,6 +345,7 @@
             'aria-label="Replace link">' + I_EDIT + '</button>'
           : '') +
       '</div>' +
+      historyBlock((PRODUCTS[mkey.split("|")[0]] || {}).name, label) +
     '</article>';
   }
 
@@ -347,6 +393,7 @@
                 'data-log="' + esc(pname + "||" + l.name + " (SVG)||lockup") + '">' + I_DL + 'SVG</a>'
               : '') +
           '</span>' +
+          historyBlock(pname, l.name, true) +
         '</div>' +
       '</li>';
     }).join("");
@@ -544,100 +591,6 @@
         : '');
   }
 
-  /* ---------- history ---------- */
-  function renderHistory() {
-    var rows = (store.history || []).slice().reverse();
-    var q = state.q.trim().toLowerCase();
-    if (q) {
-      rows = rows.filter(function (r) {
-        return (r.email + " " + r.product + " " + r.item + " " + r.kind).toLowerCase().indexOf(q) !== -1;
-      });
-    }
-
-    var people = {}, items = {};
-    (store.history || []).forEach(function (r) {
-      people[r.email || "(not signed in)"] = (people[r.email || "(not signed in)"] || 0) + 1;
-      var k = r.product + " · " + r.item;
-      items[k] = (items[k] || 0) + 1;
-    });
-    var topItems = Object.keys(items).sort(function (a, b) { return items[b] - items[a]; }).slice(0, 5);
-    var peopleN = Object.keys(people).length;
-
-    var body = rows.length
-      ? rows.map(function (r) {
-          var d = new Date(r.ts);
-          return '<tr>' +
-            '<td class="hx__when"><span>' + esc(d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })) + '</span>' +
-              '<em>' + esc(d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })) + '</em></td>' +
-            '<td class="hx__who">' + esc(r.email || "— not signed in —") + '</td>' +
-            '<td>' + esc(r.product) + '</td>' +
-            '<td class="hx__item">' + esc(r.item) + '</td>' +
-            '<td><span class="hx__kind hx__kind--' + esc(r.kind) + '">' + esc(r.kind) + '</span></td>' +
-          '</tr>';
-        }).join("")
-      : '<tr><td colspan="5" class="hx__none">Nothing recorded yet. ' +
-        'Downloads are logged from the moment this page loads.</td></tr>';
-
-    return '' +
-      '<header class="page-head">' +
-        '<div class="page-head__text">' +
-          '<div class="page-head__crumb overline">Admin</div>' +
-          '<h1 class="page-head__title">Download history</h1>' +
-          '<p class="page-head__blurb">Who took which piece of collateral, and when.</p>' +
-        '</div>' +
-        '<div class="kitmeter">' +
-          '<div class="kitmeter__num">' + (store.history || []).length + '</div>' +
-          '<div class="kitmeter__label">' + (peopleN === 1 ? "1 person" : peopleN + " people") + '</div>' +
-        '</div>' +
-      '</header>' +
-
-      '<div class="hx__warn">' +
-        '<strong>This browser only.</strong> The hub has no server, so it can log ' +
-        'what happens here but cannot collect downloads from anyone else’s machine. ' +
-        'A shared, tamper-proof log needs a backend — see the README.' +
-      '</div>' +
-
-      (topItems.length
-        ? '<div class="hx__top"><span class="hx__top-lab">Most taken</span>' +
-          topItems.map(function (k) {
-            return '<span class="hx__pill">' + esc(k) + ' <b>' + items[k] + '</b></span>';
-          }).join("") + '</div>'
-        : '') +
-
-      '<div class="filters">' +
-        '<span class="filters__spacer"></span>' +
-        '<span class="filters__count">' + rows.length +
-          (rows.length === 1 ? " event" : " events") + '</span>' +
-        ((store.history || []).length
-          ? '<button class="chip" data-hx="csv">Download CSV</button>' +
-            '<button class="chip" data-hx="clear">Clear log</button>'
-          : '') +
-      '</div>' +
-
-      '<div class="mx__wrap"><table class="mx hx">' +
-        '<tr><th class="mx__h">When</th><th class="mx__h">Who</th>' +
-        '<th class="mx__h">Offering</th><th class="mx__h">Item</th>' +
-        '<th class="mx__h">Kind</th></tr>' + body +
-      '</table></div>';
-  }
-
-  function historyCsv() {
-    var head = ["when", "who", "role", "offering", "item", "kind"];
-    var lines = [head.join(",")];
-    (store.history || []).forEach(function (r) {
-      lines.push([r.ts, r.email, r.role, r.product, r.item, r.kind].map(function (v) {
-        var s = String(v == null ? "" : v);
-        return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
-      }).join(","));
-    });
-    var blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" });
-    var a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = "gsl-download-history-" + new Date().toISOString().slice(0, 10) + ".csv";
-    document.body.appendChild(a); a.click();
-    setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
-  }
-
   function renderSearch() {
     var q = state.q.trim().toLowerCase();
     var list = ALL.filter(function (a) { return a.haystack.indexOf(q) !== -1; });
@@ -677,12 +630,10 @@
   var el = {};
   function render() {
     indexProducts();
-    var special = state.view === "overview" || (state.view === "history" && can("history"));
-    if (!PRODUCTS[state.view] && !special) state.view = "overview";
+    if (!PRODUCTS[state.view] && state.view !== "overview") state.view = "overview";
 
     el.nav.innerHTML = renderNav();
-    if (state.view === "history") el.main.innerHTML = renderHistory();
-    else if (state.q.trim()) el.main.innerHTML = renderSearch();
+    if (state.q.trim()) el.main.innerHTML = renderSearch();
     else if (state.view === "overview") el.main.innerHTML = renderOverview();
     else el.main.innerHTML = renderProduct(state.view);
 
@@ -698,7 +649,6 @@
     el.export.textContent = "Export " + n + " change" + (n === 1 ? "" : "s");
 
     document.title = (state.view === "overview" ? "Sales asset hub"
-                     : state.view === "history" ? "Download history"
                      : (PRODUCTS[state.view] || {}).name) + " · GSL";
   }
 
@@ -1008,16 +958,18 @@
       if (lg) {
         var p = lg.getAttribute("data-log").split("||");
         logDownload({ product: p[0], item: p[1], kind: p[2] });
-        if (state.view === "history") render();
+        // Refresh so the card's own count updates. Downloads open in a new
+        // tab or save directly, so re-rendering does not interrupt them.
+        if (can("history")) setTimeout(render, 60);
       }
 
-      var hx = e.target.closest("[data-hx]");
-      if (hx) {
-        var act = hx.getAttribute("data-hx");
-        if (act === "csv") historyCsv();
-        if (act === "clear" && window.confirm("Clear the download log on this browser?")) {
-          store.history = []; save(); render();
-        }
+      // Expand in place — re-rendering would collapse every other card.
+      var hb = e.target.closest("[data-hist]");
+      if (hb) {
+        var list = hb.parentNode.querySelector(".hist__list");
+        var open = list.hidden;
+        list.hidden = !open;
+        hb.setAttribute("aria-expanded", String(open));
         return;
       }
 

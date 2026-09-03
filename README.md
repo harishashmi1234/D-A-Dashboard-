@@ -66,7 +66,7 @@ Two roles, set in `roles.js`:
 | Add / replace mandates and lockups | — | ✅ |
 | Add a new offering or partner | — | ✅ |
 | Export changes | — | ✅ |
-| See the download history | — | ✅ |
+| See download history on each item | — | ✅ |
 
 Signed-out visitors get **manager**. To become admin, click **Sign in** in the
 sidebar and enter an email listed in `GSL_ADMINS` in `roles.js`. Add admins by
@@ -74,12 +74,19 @@ editing that array and pushing.
 
 ## Download history
 
-Admins get a **History** tab: every download, who took it, and when. It also
-shows the five most-taken items and exports to CSV.
+Each piece of collateral carries its own record, shown on its card. Admins
+see a line under the download button:
 
-Logged on every download — kit slots, lockups, guidelines — plus "viewed"
-events when someone opens a file in the SharePoint viewer rather than
-downloading it.
+```
+› 3 downloads    gslclaude · 3 Sept 2026, 11:05
+```
+
+Click it to expand the full list — email, date and time for every download,
+newest first. Files opened in the SharePoint viewer rather than downloaded
+are tagged **viewed**.
+
+It sits on kit slots, logo lockups and guideline documents alike. Managers
+do not see it at all; their downloads are still recorded.
 
 ### It only sees this browser
 
@@ -90,8 +97,8 @@ in `localStorage` and the person being logged can clear it.
 
 Making it real is a small change — `logDownload()` in `app.js` already builds
 the record; it just needs to POST it somewhere. A Vercel serverless function
-writing to Vercel KV would do it in about an hour, and the History tab would
-then read from that instead of local storage.
+writing to Vercel KV would do it in about an hour, and `historyFor()` would
+read from that instead of local storage.
 
 If you need reliable download auditing **today**, SharePoint already has it:
 Microsoft Purview audit logs record every file access, server-side and

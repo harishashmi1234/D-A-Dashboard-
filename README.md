@@ -1,12 +1,16 @@
-# GSL Sales Asset Hub
+# GSL Asset Shelf
+
+The shelf every GSL team takes collateral from — sales, marketing, design and
+partnerships alike. If it is on the shelf it is the current approved version;
+if a space is empty, that piece does not exist yet.
 
 Static site. No build step, no framework, no dependencies. Vercel serves the
 folder as-is.
 
 ## What this is
 
-A sales kit, not a file dump. Every offering has the **same eight slots** — the
-things a rep actually needs in front of a school:
+A stocked shelf, not a file dump. Every offering has the **same eight slots** —
+the things someone actually needs in front of a school:
 
 | Slot | What it is |
 |---|---|

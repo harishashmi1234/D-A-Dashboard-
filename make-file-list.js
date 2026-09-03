@@ -1,4 +1,4 @@
-/* Regenerates FILES-NEEDED.md — the sales-kit matrix as a checklist, with a
+/* Regenerates FILES-NEEDED.md — the collateral-kit matrix as a checklist, with a
    direct download link for every slot that is filled, and a clear gap for
    every slot that is not.
 
@@ -61,7 +61,7 @@ gaps.forEach(g => {
 });
 
 const head = [
-  "# GSL sales kit — status",
+  "# GSL Asset Shelf — what is stocked",
   "",
   "**" + have + " of " + (have + todo) + " slots filled** across " +
     C.products.length + " offerings × " + SLOTS.length + " slots.",

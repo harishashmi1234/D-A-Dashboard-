@@ -1,5 +1,5 @@
 /* ============================================================
-   Get Set Learn — Sales Asset Hub
+   Get Set Learn — Asset Shelf
    Plain JS, no build step.
      assets.js   -> GSL_CATALOG, GSL_SLOTS, GSL_SHAREPOINT
      mandates.js -> GSL_MANDATES, GSL_FONTS, GSL_PALETTE, GSL_PLACEMENT
@@ -677,7 +677,7 @@
     return '' +
       '<header class="page-head">' +
         '<div class="page-head__text">' +
-          '<div class="page-head__crumb overline">Sales kit' +
+          '<div class="page-head__crumb overline">Collateral kit' +
             (p.added ? ' · added here' : '') + '</div>' +
           '<h1 class="page-head__title">' + esc(p.name) + '</h1>' +
           '<p class="page-head__blurb">' + esc(p.blurb) + '</p>' +
@@ -735,9 +735,9 @@
     return '' +
       '<header class="page-head">' +
         '<div class="page-head__text">' +
-          '<div class="page-head__crumb overline">Sales asset hub</div>' +
+          '<div class="page-head__crumb overline">Asset shelf</div>' +
           '<h1 class="page-head__title">What we can send a school today</h1>' +
-          '<p class="page-head__blurb">Every offering, every piece of sales collateral. ' +
+          '<p class="page-head__blurb">Every offering, every piece of collateral. ' +
             'A tick downloads it; a gap means it has not been designed yet.</p>' +
         '</div>' +
         '<div class="kitmeter">' +
@@ -814,7 +814,7 @@
     el.export.hidden = !(can("export") && n > 0);
     el.export.textContent = "Export " + n + " change" + (n === 1 ? "" : "s");
 
-    document.title = (state.view === "overview" ? "Sales asset hub"
+    document.title = (state.view === "overview" ? "Asset Shelf"
                      : state.view === "history" ? "Download history"
                      : (PRODUCTS[state.view] || {}).name) + " · GSL";
   }

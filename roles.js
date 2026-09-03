@@ -1,5 +1,5 @@
 /* ============================================================
-   Get Set Learn — Sales Asset Hub · ROLES
+   Get Set Learn — Asset Shelf · ROLES
    ------------------------------------------------------------
    WHAT THIS IS
      A guard rail, not a lock. The hub is a static site with no

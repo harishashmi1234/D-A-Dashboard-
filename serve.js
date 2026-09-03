@@ -16,4 +16,4 @@ http.createServer((req, res) => {
                          "Cache-Control": "no-store" });
     res.end(buf);
   });
-}).listen(PORT, () => console.log("GSL Asset Hub → http://localhost:" + PORT));
+}).listen(PORT, () => console.log("GSL Asset Shelf → http://localhost:" + PORT));

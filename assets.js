@@ -1,7 +1,7 @@
 /* ============================================================
-   Get Set Learn — Sales Asset Hub · CATALOGUE
+   Get Set Learn — Asset Shelf · CATALOGUE
 
-   Structured as a SALES KIT: every offering has the same set of
+   Structured as a COLLATERAL KIT: every offering has the same set of
    slots a rep actually needs in front of a school. A slot either
    points at a real file in the GSLMarketingCollaterals-2025
    SharePoint, or is marked "yet to be designed" so the gap shows.

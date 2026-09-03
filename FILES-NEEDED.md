@@ -1,4 +1,4 @@
-# GSL sales kit — status
+# GSL Asset Shelf — what is stocked
 
 **23 of 88 slots filled** across 11 offerings × 8 slots.
 

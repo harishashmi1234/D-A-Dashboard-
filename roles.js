@@ -29,15 +29,19 @@ window.GSL_ADMINS = [
 window.GSL_ROLES = {
   admin: {
     label: "Admin",
-    can: { view: true, download: true, edit: true, addOffering: true, export: true },
-    blurb: "Can add offerings, attach links and edit mandates."
+    can: { view: true, download: true, edit: true, addOffering: true, export: true, history: true },
+    blurb: "Can add offerings, attach links, edit mandates and see the download log."
   },
   manager: {
     label: "Manager",
-    can: { view: true, download: true, edit: false, addOffering: false, export: false },
+    can: { view: true, download: true, edit: false, addOffering: false, export: false, history: false },
     blurb: "Can view and download everything. Cannot change the catalogue."
   }
 };
+
+/* How many download events to keep in this browser before the oldest are
+   dropped. Enough for months of normal use without filling localStorage. */
+window.GSL_HISTORY_LIMIT = 1000;
 
 /* Signed-out visitors get manager rights — the hub is useful immediately,
    and nothing it exposes is more sensitive than the SharePoint behind it. */

@@ -66,10 +66,36 @@ Two roles, set in `roles.js`:
 | Add / replace mandates and lockups | — | ✅ |
 | Add a new offering or partner | — | ✅ |
 | Export changes | — | ✅ |
+| See the download history | — | ✅ |
 
 Signed-out visitors get **manager**. To become admin, click **Sign in** in the
 sidebar and enter an email listed in `GSL_ADMINS` in `roles.js`. Add admins by
 editing that array and pushing.
+
+## Download history
+
+Admins get a **History** tab: every download, who took it, and when. It also
+shows the five most-taken items and exports to CSV.
+
+Logged on every download — kit slots, lockups, guidelines — plus "viewed"
+events when someone opens a file in the SharePoint viewer rather than
+downloading it.
+
+### It only sees this browser
+
+With no server, the hub can log what happens on one machine but cannot collect
+downloads from anyone else's. So the History tab is accurate about *your* usage
+and blind to the rest of the team. It is also not tamper-proof: the log lives
+in `localStorage` and the person being logged can clear it.
+
+Making it real is a small change — `logDownload()` in `app.js` already builds
+the record; it just needs to POST it somewhere. A Vercel serverless function
+writing to Vercel KV would do it in about an hour, and the History tab would
+then read from that instead of local storage.
+
+If you need reliable download auditing **today**, SharePoint already has it:
+Microsoft Purview audit logs record every file access, server-side and
+tamper-proof, for the same files this hub links to.
 
 ### This is a guard rail, not a lock
 

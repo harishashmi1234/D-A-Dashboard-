@@ -18,7 +18,8 @@
      assets.js / mandates.js and pushed. */
   var store = load();
   function load() {
-    var d = { role: null, email: "", links: {}, mandates: {}, lockups: {}, offerings: [], mandOpen: false };
+    var d = { role: null, email: "", links: {}, mandates: {}, lockups: {},
+              offerings: [], mandOpen: false, history: [] };
     try {
       var raw = JSON.parse(localStorage.getItem(KEY) || "{}");
       Object.keys(d).forEach(function (k) { if (raw[k] != null) d[k] = raw[k]; });
@@ -42,6 +43,32 @@
     });
   }
 
+  /* ---------- download log ----------
+     Written on every download click. With no server this records only what
+     happens in THIS browser — accurate about who and when for one machine,
+     but it cannot aggregate across the team. Swapping in a backend means
+     POSTing the same record from here; nothing else changes. */
+  function logDownload(meta) {
+    var rec = {
+      ts: new Date().toISOString(),
+      email: store.email || "",
+      role: role(),
+      product: meta.product || "",
+      item: meta.item || "",
+      kind: meta.kind || "file"
+    };
+    store.history.push(rec);
+
+    var cap = window.GSL_HISTORY_LIMIT || 1000;
+    if (store.history.length > cap) {
+      store.history = store.history.slice(store.history.length - cap);
+    }
+    save();
+
+    // Where a shared log would go:
+    // navigator.sendBeacon("/api/log", JSON.stringify(rec));
+  }
+
   /* ---------- products (catalogue + locally added) ---------- */
   function products() { return C.products.concat(store.offerings || []); }
   var PRODUCTS = {}, SLOT = {};
@@ -56,6 +83,7 @@
 
   function readHash() {
     var h = decodeURIComponent(location.hash.replace(/^#/, ""));
+    if (h === "history") return can("history") ? "history" : "overview";
     return h && h !== "overview" ? h : "overview";
   }
 
@@ -179,7 +207,18 @@
     if (can("addOffering")) {
       html += '<button class="nav__add" data-new-offering>' + I_ADD + 'Add an offering</button>';
     }
-    return html + '</div>';
+    html += '</div>';
+
+    if (can("history")) {
+      var n = (store.history || []).length;
+      html += '<div class="nav__group"><div class="nav__label overline">Admin</div>' +
+        '<button class="nav__item" data-view="history" aria-current="' + (state.view === "history") + '">' +
+          '<span class="nav__dot" style="background:' + (state.view === "history" ? "#00D8B9" : "#8A8A99") + '"></span>' +
+          '<span class="nav__name">History</span>' +
+          (n ? '<span class="nav__count nav__count--has">' + n + '</span>' : '') +
+        '</button></div>';
+    }
+    return html;
   }
 
   /* ---------- kit card ---------- */
@@ -207,10 +246,12 @@
         (a.added ? '<span class="card__added">Added here</span>' : '') +
       '</div>' +
       '<div class="card__actions">' +
-        '<a class="btn-download" href="' + esc(a.url) + '" target="_blank" rel="noopener">' +
+        '<a class="btn-download" href="' + esc(a.url) + '" target="_blank" rel="noopener" ' +
+          'data-log="' + esc(a.productName + "||" + a.slotLabel + "||kit") + '">' +
           I_DL + 'Download</a>' +
         (a.view
           ? '<a class="btn-icon" href="' + esc(a.view) + '" target="_blank" rel="noopener" ' +
+            'data-log="' + esc(a.productName + "||" + a.slotLabel + "||viewed") + '" ' +
             'title="Open in SharePoint" aria-label="Open in SharePoint">' + I_EYE + '</a>'
           : '') +
         (can("edit")
@@ -248,9 +289,11 @@
       '<div class="card__file"><code>' + esc(m.sp) + '</code></div>' +
       (m.added ? '<div class="card__meta-row"><span class="card__added">Added here</span></div>' : '') +
       '<div class="card__actions">' +
-        '<a class="btn-download" href="' + esc(url) + '" target="_blank" rel="noopener">' +
+        '<a class="btn-download" href="' + esc(url) + '" target="_blank" rel="noopener" ' +
+          'data-log="' + esc((PRODUCTS[mkey.split("|")[0]] || {}).name + "||" + label + "||mandate") + '">' +
           I_DL + 'Download</a>' +
         (v ? '<a class="btn-icon" href="' + esc(v) + '" target="_blank" rel="noopener" ' +
+             'data-log="' + esc((PRODUCTS[mkey.split("|")[0]] || {}).name + "||" + label + "||viewed") + '" ' +
              'title="Open in SharePoint" aria-label="Open in SharePoint">' + I_EYE + '</a>' : '') +
         (can("edit")
           ? '<button class="btn-icon" data-mand="' + esc(mkey) + '" title="Replace link" ' +
@@ -277,6 +320,7 @@
       '</article>';
     }
 
+    var pname = (PRODUCTS[pid] || {}).name || pid;
     var items = list.map(function (l) {
       // Show a small thumbnail, hand over the full-resolution file. The
       // masters are 8000px wide — rendering those directly locks the page up.
@@ -294,9 +338,14 @@
             (l.added ? ' <em class="lk__added">added</em>' : '') + '</span>' +
           '<span class="lk__use">' + esc(l.usage || "") + '</span>' +
           '<span class="lk__acts">' +
-            '<a class="lk__dl" href="' + esc(l.file) + '"' + (isRemote ? ' target="_blank" rel="noopener"' : ' download') + '>' +
+            '<a class="lk__dl" href="' + esc(l.file) + '"' +
+              (isRemote ? ' target="_blank" rel="noopener"' : ' download') +
+              ' data-log="' + esc(pname + "||" + l.name + "||lockup") + '">' +
               I_DL + (isRemote ? 'Open' : 'PNG') + '</a>' +
-            (l.vector ? '<a class="lk__dl" href="' + esc(l.vector) + '" download>' + I_DL + 'SVG</a>' : '') +
+            (l.vector
+              ? '<a class="lk__dl" href="' + esc(l.vector) + '" download ' +
+                'data-log="' + esc(pname + "||" + l.name + " (SVG)||lockup") + '">' + I_DL + 'SVG</a>'
+              : '') +
           '</span>' +
         '</div>' +
       '</li>';
@@ -456,6 +505,7 @@
         var a = ALL.filter(function (x) { return x.product === p.id && x.slot === s.id; })[0];
         if (a && a.ready) {
           return '<td class="mx__c mx__c--ok"><a href="' + esc(a.url) + '" target="_blank" rel="noopener" ' +
+                 'data-log="' + esc(p.name + "||" + s.label + "||kit") + '" ' +
                  'title="' + esc(a.file) + '">' + I_DL + '</a></td>';
         }
         return '<td class="mx__c mx__c--no">' +
@@ -492,6 +542,100 @@
       (can("addOffering")
         ? '<button class="btn-solid mx__new" data-new-offering>' + I_ADD + 'Add an offering</button>'
         : '');
+  }
+
+  /* ---------- history ---------- */
+  function renderHistory() {
+    var rows = (store.history || []).slice().reverse();
+    var q = state.q.trim().toLowerCase();
+    if (q) {
+      rows = rows.filter(function (r) {
+        return (r.email + " " + r.product + " " + r.item + " " + r.kind).toLowerCase().indexOf(q) !== -1;
+      });
+    }
+
+    var people = {}, items = {};
+    (store.history || []).forEach(function (r) {
+      people[r.email || "(not signed in)"] = (people[r.email || "(not signed in)"] || 0) + 1;
+      var k = r.product + " · " + r.item;
+      items[k] = (items[k] || 0) + 1;
+    });
+    var topItems = Object.keys(items).sort(function (a, b) { return items[b] - items[a]; }).slice(0, 5);
+    var peopleN = Object.keys(people).length;
+
+    var body = rows.length
+      ? rows.map(function (r) {
+          var d = new Date(r.ts);
+          return '<tr>' +
+            '<td class="hx__when"><span>' + esc(d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })) + '</span>' +
+              '<em>' + esc(d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })) + '</em></td>' +
+            '<td class="hx__who">' + esc(r.email || "— not signed in —") + '</td>' +
+            '<td>' + esc(r.product) + '</td>' +
+            '<td class="hx__item">' + esc(r.item) + '</td>' +
+            '<td><span class="hx__kind hx__kind--' + esc(r.kind) + '">' + esc(r.kind) + '</span></td>' +
+          '</tr>';
+        }).join("")
+      : '<tr><td colspan="5" class="hx__none">Nothing recorded yet. ' +
+        'Downloads are logged from the moment this page loads.</td></tr>';
+
+    return '' +
+      '<header class="page-head">' +
+        '<div class="page-head__text">' +
+          '<div class="page-head__crumb overline">Admin</div>' +
+          '<h1 class="page-head__title">Download history</h1>' +
+          '<p class="page-head__blurb">Who took which piece of collateral, and when.</p>' +
+        '</div>' +
+        '<div class="kitmeter">' +
+          '<div class="kitmeter__num">' + (store.history || []).length + '</div>' +
+          '<div class="kitmeter__label">' + (peopleN === 1 ? "1 person" : peopleN + " people") + '</div>' +
+        '</div>' +
+      '</header>' +
+
+      '<div class="hx__warn">' +
+        '<strong>This browser only.</strong> The hub has no server, so it can log ' +
+        'what happens here but cannot collect downloads from anyone else’s machine. ' +
+        'A shared, tamper-proof log needs a backend — see the README.' +
+      '</div>' +
+
+      (topItems.length
+        ? '<div class="hx__top"><span class="hx__top-lab">Most taken</span>' +
+          topItems.map(function (k) {
+            return '<span class="hx__pill">' + esc(k) + ' <b>' + items[k] + '</b></span>';
+          }).join("") + '</div>'
+        : '') +
+
+      '<div class="filters">' +
+        '<span class="filters__spacer"></span>' +
+        '<span class="filters__count">' + rows.length +
+          (rows.length === 1 ? " event" : " events") + '</span>' +
+        ((store.history || []).length
+          ? '<button class="chip" data-hx="csv">Download CSV</button>' +
+            '<button class="chip" data-hx="clear">Clear log</button>'
+          : '') +
+      '</div>' +
+
+      '<div class="mx__wrap"><table class="mx hx">' +
+        '<tr><th class="mx__h">When</th><th class="mx__h">Who</th>' +
+        '<th class="mx__h">Offering</th><th class="mx__h">Item</th>' +
+        '<th class="mx__h">Kind</th></tr>' + body +
+      '</table></div>';
+  }
+
+  function historyCsv() {
+    var head = ["when", "who", "role", "offering", "item", "kind"];
+    var lines = [head.join(",")];
+    (store.history || []).forEach(function (r) {
+      lines.push([r.ts, r.email, r.role, r.product, r.item, r.kind].map(function (v) {
+        var s = String(v == null ? "" : v);
+        return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+      }).join(","));
+    });
+    var blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" });
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "gsl-download-history-" + new Date().toISOString().slice(0, 10) + ".csv";
+    document.body.appendChild(a); a.click();
+    setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
   }
 
   function renderSearch() {
@@ -533,10 +677,12 @@
   var el = {};
   function render() {
     indexProducts();
-    if (!PRODUCTS[state.view] && state.view !== "overview") state.view = "overview";
+    var special = state.view === "overview" || (state.view === "history" && can("history"));
+    if (!PRODUCTS[state.view] && !special) state.view = "overview";
 
     el.nav.innerHTML = renderNav();
-    if (state.q.trim()) el.main.innerHTML = renderSearch();
+    if (state.view === "history") el.main.innerHTML = renderHistory();
+    else if (state.q.trim()) el.main.innerHTML = renderSearch();
     else if (state.view === "overview") el.main.innerHTML = renderOverview();
     else el.main.innerHTML = renderProduct(state.view);
 
@@ -552,6 +698,7 @@
     el.export.textContent = "Export " + n + " change" + (n === 1 ? "" : "s");
 
     document.title = (state.view === "overview" ? "Sales asset hub"
+                     : state.view === "history" ? "Download history"
                      : (PRODUCTS[state.view] || {}).name) + " · GSL";
   }
 
@@ -856,6 +1003,24 @@
   /* ---------- events ---------- */
   function wire() {
     document.addEventListener("click", function (e) {
+      // Log before anything else — the link may navigate away immediately.
+      var lg = e.target.closest("[data-log]");
+      if (lg) {
+        var p = lg.getAttribute("data-log").split("||");
+        logDownload({ product: p[0], item: p[1], kind: p[2] });
+        if (state.view === "history") render();
+      }
+
+      var hx = e.target.closest("[data-hx]");
+      if (hx) {
+        var act = hx.getAttribute("data-hx");
+        if (act === "csv") historyCsv();
+        if (act === "clear" && window.confirm("Clear the download log on this browser?")) {
+          store.history = []; save(); render();
+        }
+        return;
+      }
+
       var nav = e.target.closest("[data-view]");
       if (nav) {
         state.view = nav.getAttribute("data-view");

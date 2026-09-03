@@ -66,7 +66,7 @@ Two roles, set in `roles.js`:
 | Add / replace mandates and lockups | — | ✅ |
 | Add a new offering or partner | — | ✅ |
 | Export changes | — | ✅ |
-| See download history on each item | — | ✅ |
+| See the download history | — | ✅ |
 
 Signed-out visitors get **manager**. To become admin, click **Sign in** in the
 sidebar and enter an email listed in `GSL_ADMINS` in `roles.js`. Add admins by
@@ -74,38 +74,38 @@ editing that array and pushing.
 
 ## Download history
 
-Each piece of collateral carries its own record, shown on its card. Admins
-see a line under the download button:
+Admins get a **Download history** section in the sidebar: who took which
+piece of collateral, and when.
 
-```
-› 54 downloads · 4 people                              3h ago
-```
+| Column | |
+|---|---|
+| When | Date and time |
+| Who | The signed-in email |
+| Offering | Which programme it belongs to |
+| Collateral | The slot or lockup taken |
+| Type | **download**, or **viewed** if opened in the SharePoint viewer |
 
-Click it to expand, **grouped by person** — who, how many times, and when
-they last took it:
+Because a flat log gets long fast, it is searchable and filterable:
 
-```
-sneha@getsetlearn.info        14×   last 3 Sept 2026, 11:14 · 1 viewed
-arjun@getsetlearn.info        14×   last 3 Sept 2026, 10:07 · 1 viewed
-priya@getsetlearn.info        13×   last 3 Sept 2026, 09:00 · 2 viewed
-gslclaude@getsetlearn.info    13×   last 2 Sept 2026, 12:21 · 2 viewed
-```
+- **Search** across collateral name, offering and person
+- **Filter** by offering, by person, or to downloads-only / views-only
+- **Every event ⇄ Grouped by collateral** — the grouped view collapses the
+  log to one row per item with a download count, how many people took it,
+  and when it was last taken. That is the view for "which brochures are
+  actually being used"
+- **CSV** exports whatever the current filters show
+- Long lists page 200 at a time
 
-Grouping matters: a raw event list grows without limit, so a popular
-brochure would eventually show hundreds of rows. Grouped, the list is as
-long as the team and stays readable no matter how heavily it is used.
-Sorted by most recent activity, so whoever is working with it now is at the
-top.
+Filtering redraws only the table, so typing in the search box keeps focus
+and caret position.
 
-Files opened in the SharePoint viewer rather than downloaded count
-separately as **viewed**. It sits on kit slots, logo lockups and guideline
-documents alike. Managers do not see it at all; their downloads are still
-recorded.
+Logged for kit slots, logo lockups and guideline documents alike. Managers
+never see the section; their downloads are still recorded.
 
 ### It only sees this browser
 
 With no server, the hub can log what happens on one machine but cannot collect
-downloads from anyone else's. So each card is accurate about *your* usage and
+downloads from anyone else's. So the log is accurate about *your* usage and
 blind to the rest of the team. It is also not tamper-proof: the log lives in
 `localStorage` and the person being logged can clear it.
 

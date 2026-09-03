@@ -69,40 +69,6 @@
     // navigator.sendBeacon("/api/log", JSON.stringify(rec));
   }
 
-  /* Every event for one specific item, newest first. */
-  function historyFor(product, item) {
-    return (store.history || [])
-      .filter(function (r) { return r.product === product && r.item === item; })
-      .sort(function (a, b) { return b.ts.localeCompare(a.ts); });
-  }
-
-  /* Rolled up per person. A raw event list grows without limit — after a
-     busy quarter a popular brochure would show hundreds of rows. Grouped,
-     the list is as long as the team and stays readable forever. */
-  function historySummary(product, item) {
-    var rows = historyFor(product, item);
-    var by = {}, order = [];
-
-    rows.forEach(function (r) {
-      var who = r.email || "";
-      if (!by[who]) { by[who] = { email: who, n: 0, views: 0, last: r.ts }; order.push(who); }
-      var p = by[who];
-      if (r.kind === "viewed") p.views++; else p.n++;
-      if (r.ts > p.last) p.last = r.ts;
-    });
-
-    // rows are newest-first, so first appearance is the most recent activity
-    var people = order.map(function (w) { return by[w]; });
-
-    return {
-      total: rows.length,
-      downloads: rows.filter(function (r) { return r.kind !== "viewed"; }).length,
-      views: rows.filter(function (r) { return r.kind === "viewed"; }).length,
-      people: people,
-      last: rows[0] || null
-    };
-  }
-
   function stamp(ts) {
     var d = new Date(ts);
     if (isNaN(d)) return ts;
@@ -110,65 +76,206 @@
            ", " + d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
   }
 
-  /* The download record for one card. Admin only — a manager has no reason
-     to see who else has been sending which brochure. */
-  function historyBlock(product, item, compact) {
-    if (!can("history")) return "";
-    var s = historySummary(product, item);
-    var key = product + "||" + item;
+  /* ---------- the history view ----------
+     One place to answer "who took what, and when". Searchable because a
+     flat log gets long fast; filters narrow it to one offering, one
+     person, or downloads-only. */
+  var hstate = { q: "", product: "all", who: "all", kind: "all", group: false, show: 200 };
 
-    if (!s.total) {
-      return '<div class="hist hist--none' + (compact ? " hist--compact" : "") + '">' +
-        'Not downloaded yet</div>';
-    }
-
-    var n = s.people.length;
-    var summary = s.downloads
-      ? s.downloads + (s.downloads === 1 ? " download" : " downloads")
-      : s.views + (s.views === 1 ? " view" : " views");
-
-    return '<div class="hist' + (compact ? " hist--compact" : "") + '">' +
-      '<button class="hist__bar" data-hist="' + esc(key) + '" aria-expanded="false">' +
-        '<span class="hist__chev" aria-hidden="true">' +
-          '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
-          'stroke-width="3" stroke-linecap="round" stroke-linejoin="round">' +
-          '<path d="M9 6l6 6-6 6"></path></svg></span>' +
-        '<span class="hist__n">' + summary + '</span>' +
-        '<span class="hist__by">' + n + (n === 1 ? " person" : " people") + '</span>' +
-        '<span class="hist__last">' + esc(relative(s.last.ts)) + '</span>' +
-      '</button>' +
-      '<ul class="hist__list" hidden>' +
-        s.people.map(function (p) {
-          var badge = p.n
-            ? '<span class="hist__x">' + p.n + '&times;</span>'
-            : '<span class="hist__x hist__x--view">viewed</span>';
-          return '<li>' +
-            '<span class="hist__row">' +
-              '<span class="hist__who" title="' + esc(p.email || "not signed in") + '">' +
-                esc(p.email || "— not signed in —") + '</span>' +
-              badge +
-            '</span>' +
-            '<span class="hist__when">last ' + esc(stamp(p.last)) +
-              (p.n && p.views ? ' · ' + p.views + ' viewed' : '') + '</span>' +
-          '</li>';
-        }).join("") +
-      '</ul>' +
-    '</div>';
+  function historyRows() {
+    var q = hstate.q.trim().toLowerCase();
+    return (store.history || [])
+      .filter(function (r) {
+        if (hstate.product !== "all" && r.product !== hstate.product) return false;
+        if (hstate.who !== "all" && (r.email || "") !== hstate.who) return false;
+        if (hstate.kind === "download" && r.kind === "viewed") return false;
+        if (hstate.kind === "viewed" && r.kind !== "viewed") return false;
+        if (q && (r.item + " " + r.product + " " + r.email).toLowerCase().indexOf(q) === -1) return false;
+        return true;
+      })
+      .sort(function (a, b) { return b.ts.localeCompare(a.ts); });
   }
 
-  /* "2 hours ago" reads faster than a timestamp on the collapsed line; the
-     exact date and time is one click away. */
-  function relative(ts) {
-    var then = new Date(ts).getTime();
-    if (isNaN(then)) return "";
-    var mins = Math.round((Date.now() - then) / 60000);
-    if (mins < 1) return "just now";
-    if (mins < 60) return mins + "m ago";
-    var hrs = Math.round(mins / 60);
-    if (hrs < 24) return hrs + "h ago";
-    var days = Math.round(hrs / 24);
-    if (days < 30) return days + "d ago";
-    return new Date(ts).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+  /* Same rows, one line per collateral item — the view you want when
+     asking "which brochures are actually being used". */
+  function groupRows(rows) {
+    var by = {}, order = [];
+    rows.forEach(function (r) {
+      var k = r.product + "||" + r.item;
+      if (!by[k]) {
+        by[k] = { product: r.product, item: r.item, n: 0, views: 0, last: r.ts, who: {} };
+        order.push(k);
+      }
+      var g = by[k];
+      if (r.kind === "viewed") g.views++; else g.n++;
+      g.who[r.email || "—"] = 1;
+      if (r.ts > g.last) g.last = r.ts;
+    });
+    return order.map(function (k) { return by[k]; });
+  }
+
+  function historyTable() {
+    var rows = historyRows();
+
+    if (!rows.length) {
+      return '<tr><td colspan="5" class="hx__none">' +
+        ((store.history || []).length ? "Nothing matches those filters."
+                                      : "Nothing recorded yet.") + '</td></tr>';
+    }
+
+    if (hstate.group) {
+      return groupRows(rows).map(function (g) {
+        return '<tr>' +
+          '<td class="hx__item"><strong>' + esc(g.item) + '</strong></td>' +
+          '<td>' + esc(g.product) + '</td>' +
+          '<td class="hx__num">' + g.n + (g.views ? ' <em>+' + g.views + ' viewed</em>' : '') + '</td>' +
+          '<td class="hx__num">' + Object.keys(g.who).length + '</td>' +
+          '<td class="hx__when">' + esc(stamp(g.last)) + '</td>' +
+        '</tr>';
+      }).join("");
+    }
+
+    var shown = rows.slice(0, hstate.show);
+    var out = shown.map(function (r) {
+      return '<tr>' +
+        '<td class="hx__when">' + esc(stamp(r.ts)) + '</td>' +
+        '<td class="hx__who">' + esc(r.email || "— not signed in —") + '</td>' +
+        '<td>' + esc(r.product) + '</td>' +
+        '<td class="hx__item">' + esc(r.item) + '</td>' +
+        '<td><span class="hx__kind hx__kind--' + esc(r.kind) + '">' +
+          esc(r.kind === "viewed" ? "viewed" : "download") + '</span></td>' +
+      '</tr>';
+    }).join("");
+
+    if (rows.length > shown.length) {
+      out += '<tr><td colspan="5" class="hx__more">' +
+        '<button class="chip" data-hmore>Show ' +
+        Math.min(200, rows.length - shown.length) + ' more of ' +
+        (rows.length - shown.length) + '</button></td></tr>';
+    }
+    return out;
+  }
+
+  function historyHead() {
+    return hstate.group
+      ? '<tr><th class="mx__h">Collateral</th><th class="mx__h">Offering</th>' +
+        '<th class="mx__h">Downloads</th><th class="mx__h">People</th>' +
+        '<th class="mx__h">Last taken</th></tr>'
+      : '<tr><th class="mx__h">When</th><th class="mx__h">Who</th>' +
+        '<th class="mx__h">Offering</th><th class="mx__h">Collateral</th>' +
+        '<th class="mx__h">Type</th></tr>';
+  }
+
+  function historyCount() {
+    var rows = historyRows();
+    var n = hstate.group ? groupRows(rows).length : rows.length;
+    return n + (hstate.group ? (n === 1 ? " item" : " items")
+                             : (n === 1 ? " event" : " events"));
+  }
+
+  function renderHistory() {
+    var all = store.history || [];
+    var people = {}, prods = {};
+    all.forEach(function (r) {
+      people[r.email || ""] = 1;
+      prods[r.product] = 1;
+    });
+    var peopleList = Object.keys(people).sort();
+    var prodList = Object.keys(prods).sort();
+
+    var opt = function (v, label, cur) {
+      return '<option value="' + esc(v) + '"' + (cur === v ? " selected" : "") + '>' +
+             esc(label) + '</option>';
+    };
+
+    return '' +
+      '<header class="page-head">' +
+        '<div class="page-head__text">' +
+          '<div class="page-head__crumb overline">Admin</div>' +
+          '<h1 class="page-head__title">Download history</h1>' +
+          '<p class="page-head__blurb">Who took which piece of collateral, and when.</p>' +
+        '</div>' +
+        '<div class="kitmeter">' +
+          '<div class="kitmeter__num">' + all.length + '</div>' +
+          '<div class="kitmeter__label">' +
+            (peopleList.length === 1 ? "1 person" : peopleList.length + " people") + '</div>' +
+        '</div>' +
+      '</header>' +
+
+      '<div class="hx__warn">' +
+        '<strong>This browser only.</strong> The hub has no server, so it records ' +
+        'what happens here but cannot collect downloads from anyone else’s machine.' +
+      '</div>' +
+
+      '<div class="hx__controls">' +
+        '<div class="hx__search">' +
+          '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8A8A99" ' +
+          'stroke-width="1.8" stroke-linecap="round" aria-hidden="true">' +
+          '<circle cx="11" cy="11" r="7"></circle><path d="M20 20l-4.2-4.2"></path></svg>' +
+          '<input id="hxQ" type="search" placeholder="Search collateral, offering or person" ' +
+            'value="' + esc(hstate.q) + '" autocomplete="off">' +
+        '</div>' +
+        '<select id="hxProduct" aria-label="Filter by offering">' +
+          opt("all", "All offerings", hstate.product) +
+          prodList.map(function (p) { return opt(p, p, hstate.product); }).join("") +
+        '</select>' +
+        '<select id="hxWho" aria-label="Filter by person">' +
+          opt("all", "Everyone", hstate.who) +
+          peopleList.map(function (p) {
+            return opt(p, p || "— not signed in —", hstate.who);
+          }).join("") +
+        '</select>' +
+        '<select id="hxKind" aria-label="Filter by type">' +
+          opt("all", "Downloads and views", hstate.kind) +
+          opt("download", "Downloads only", hstate.kind) +
+          opt("viewed", "Views only", hstate.kind) +
+        '</select>' +
+        '<button class="chip" data-hgroup aria-pressed="' + hstate.group + '">' +
+          (hstate.group ? "Grouped by collateral" : "Every event") + '</button>' +
+        '<span class="filters__spacer"></span>' +
+        '<span class="filters__count" id="hxCount">' + historyCount() + '</span>' +
+        (all.length ? '<button class="chip" data-hx="csv">CSV</button>' +
+                      '<button class="chip" data-hx="clear">Clear</button>' : '') +
+      '</div>' +
+
+      '<div class="mx__wrap"><table class="mx hx">' +
+        '<thead id="hxHead">' + historyHead() + '</thead>' +
+        '<tbody id="hxBody">' + historyTable() + '</tbody>' +
+      '</table></div>';
+  }
+
+  /* Redraw only the table, so typing in the search box keeps focus. */
+  function refreshHistory() {
+    var head = document.getElementById("hxHead"),
+        body = document.getElementById("hxBody"),
+        count = document.getElementById("hxCount");
+    if (!body) return render();
+    head.innerHTML = historyHead();
+    body.innerHTML = historyTable();
+    count.textContent = historyCount();
+    var g = document.querySelector("[data-hgroup]");
+    if (g) {
+      g.setAttribute("aria-pressed", String(hstate.group));
+      g.textContent = hstate.group ? "Grouped by collateral" : "Every event";
+    }
+  }
+
+  function historyCsv() {
+    var rows = historyRows();
+    var lines = ["when,who,role,offering,collateral,type"];
+    rows.forEach(function (r) {
+      lines.push([r.ts, r.email, r.role, r.product, r.item,
+                  r.kind === "viewed" ? "viewed" : "download"].map(function (v) {
+        var s = String(v == null ? "" : v);
+        return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+      }).join(","));
+    });
+    var blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" });
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "gsl-download-history-" + new Date().toISOString().slice(0, 10) + ".csv";
+    document.body.appendChild(a); a.click();
+    setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
   }
 
   /* ---------- products (catalogue + locally added) ---------- */
@@ -185,6 +292,7 @@
 
   function readHash() {
     var h = decodeURIComponent(location.hash.replace(/^#/, ""));
+    if (h === "history") return can("history") ? "history" : "overview";
     return h && h !== "overview" ? h : "overview";
   }
 
@@ -308,7 +416,20 @@
     if (can("addOffering")) {
       html += '<button class="nav__add" data-new-offering>' + I_ADD + 'Add an offering</button>';
     }
-    return html + '</div>';
+    html += '</div>';
+
+    if (can("history")) {
+      var n = (store.history || []).length;
+      html += '<div class="nav__group"><div class="nav__label overline">Admin</div>' +
+        '<button class="nav__item" data-view="history" aria-current="' +
+          (state.view === "history") + '">' +
+          '<span class="nav__dot" style="background:' +
+            (state.view === "history" ? "#00D8B9" : "#8A8A99") + '"></span>' +
+          '<span class="nav__name">Download history</span>' +
+          (n ? '<span class="nav__count nav__count--has">' + n + '</span>' : '') +
+        '</button></div>';
+    }
+    return html;
   }
 
   /* ---------- kit card ---------- */
@@ -349,7 +470,6 @@
             'aria-label="Replace link">' + I_EDIT + '</button>'
           : '') +
       '</div>' +
-      historyBlock(a.productName, a.slotLabel) +
     '</article>';
   }
 
@@ -391,7 +511,6 @@
             'aria-label="Replace link">' + I_EDIT + '</button>'
           : '') +
       '</div>' +
-      historyBlock((PRODUCTS[mkey.split("|")[0]] || {}).name, label) +
     '</article>';
   }
 
@@ -439,7 +558,6 @@
                 'data-log="' + esc(pname + "||" + l.name + " (SVG)||lockup") + '">' + I_DL + 'SVG</a>'
               : '') +
           '</span>' +
-          historyBlock(pname, l.name, true) +
         '</div>' +
       '</li>';
     }).join("");
@@ -676,10 +794,12 @@
   var el = {};
   function render() {
     indexProducts();
-    if (!PRODUCTS[state.view] && state.view !== "overview") state.view = "overview";
+    var special = state.view === "overview" || (state.view === "history" && can("history"));
+    if (!PRODUCTS[state.view] && !special) state.view = "overview";
 
     el.nav.innerHTML = renderNav();
-    if (state.q.trim()) el.main.innerHTML = renderSearch();
+    if (state.view === "history") el.main.innerHTML = renderHistory();
+    else if (state.q.trim()) el.main.innerHTML = renderSearch();
     else if (state.view === "overview") el.main.innerHTML = renderOverview();
     else el.main.innerHTML = renderProduct(state.view);
 
@@ -695,6 +815,7 @@
     el.export.textContent = "Export " + n + " change" + (n === 1 ? "" : "s");
 
     document.title = (state.view === "overview" ? "Sales asset hub"
+                     : state.view === "history" ? "Download history"
                      : (PRODUCTS[state.view] || {}).name) + " · GSL";
   }
 
@@ -1004,18 +1125,22 @@
       if (lg) {
         var p = lg.getAttribute("data-log").split("||");
         logDownload({ product: p[0], item: p[1], kind: p[2] });
-        // Refresh so the card's own count updates. Downloads open in a new
-        // tab or save directly, so re-rendering does not interrupt them.
-        if (can("history")) setTimeout(render, 60);
+        if (state.view === "history") setTimeout(refreshHistory, 60);
       }
 
-      // Expand in place — re-rendering would collapse every other card.
-      var hb = e.target.closest("[data-hist]");
-      if (hb) {
-        var list = hb.parentNode.querySelector(".hist__list");
-        var open = list.hidden;
-        list.hidden = !open;
-        hb.setAttribute("aria-expanded", String(open));
+      if (e.target.closest("[data-hgroup]")) {
+        hstate.group = !hstate.group; hstate.show = 200; refreshHistory(); return;
+      }
+      if (e.target.closest("[data-hmore]")) {
+        hstate.show += 200; refreshHistory(); return;
+      }
+      var hx = e.target.closest("[data-hx]");
+      if (hx) {
+        var act = hx.getAttribute("data-hx");
+        if (act === "csv") historyCsv();
+        if (act === "clear" && window.confirm("Clear the download log on this browser?")) {
+          store.history = []; save(); render();
+        }
         return;
       }
 
@@ -1059,6 +1184,21 @@
         store.mandOpen = open; save();
         return;
       }
+    });
+
+    // History controls live inside the rendered page, so they are bound by
+    // delegation and update only the table — typing keeps focus.
+    var ht;
+    document.addEventListener("input", function (e) {
+      if (e.target.id !== "hxQ") return;
+      var v = e.target.value;
+      clearTimeout(ht);
+      ht = setTimeout(function () { hstate.q = v; hstate.show = 200; refreshHistory(); }, 120);
+    });
+    document.addEventListener("change", function (e) {
+      var m = { hxProduct: "product", hxWho: "who", hxKind: "kind" }[e.target.id];
+      if (!m) return;
+      hstate[m] = e.target.value; hstate.show = 200; refreshHistory();
     });
 
     var t;

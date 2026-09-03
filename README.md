@@ -78,15 +78,29 @@ Each piece of collateral carries its own record, shown on its card. Admins
 see a line under the download button:
 
 ```
-› 3 downloads    gslclaude · 3 Sept 2026, 11:05
+› 54 downloads · 4 people                              3h ago
 ```
 
-Click it to expand the full list — email, date and time for every download,
-newest first. Files opened in the SharePoint viewer rather than downloaded
-are tagged **viewed**.
+Click it to expand, **grouped by person** — who, how many times, and when
+they last took it:
 
-It sits on kit slots, logo lockups and guideline documents alike. Managers
-do not see it at all; their downloads are still recorded.
+```
+sneha@getsetlearn.info        14×   last 3 Sept 2026, 11:14 · 1 viewed
+arjun@getsetlearn.info        14×   last 3 Sept 2026, 10:07 · 1 viewed
+priya@getsetlearn.info        13×   last 3 Sept 2026, 09:00 · 2 viewed
+gslclaude@getsetlearn.info    13×   last 2 Sept 2026, 12:21 · 2 viewed
+```
+
+Grouping matters: a raw event list grows without limit, so a popular
+brochure would eventually show hundreds of rows. Grouped, the list is as
+long as the team and stays readable no matter how heavily it is used.
+Sorted by most recent activity, so whoever is working with it now is at the
+top.
+
+Files opened in the SharePoint viewer rather than downloaded count
+separately as **viewed**. It sits on kit slots, logo lockups and guideline
+documents alike. Managers do not see it at all; their downloads are still
+recorded.
 
 ### It only sees this browser
 

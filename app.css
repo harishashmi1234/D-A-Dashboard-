@@ -594,35 +594,40 @@ input, select, button, textarea, a { font: inherit; }
   color: #00695C; white-space: nowrap;
   transition: color 200ms var(--ease);
 }
+.hist__by {
+  font-size: 10.5px; color: var(--fg-4); white-space: nowrap;
+}
+.hist__by::before { content: "·"; margin-right: 5px; }
 .hist__last {
-  font-size: 10.5px; color: var(--fg-4); min-width: 0;
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  margin-left: auto; font-size: 10.5px; color: var(--fg-4); white-space: nowrap;
 }
 
 .hist__list {
   list-style: none; margin: 8px 0 0; padding: 8px 10px;
   background: var(--sunken); border-radius: 8px;
-  display: flex; flex-direction: column; gap: 6px;
-  max-height: 190px; overflow-y: auto;
+  display: flex; flex-direction: column; gap: 7px;
+  max-height: 200px; overflow-y: auto;
 }
 .hist__list li {
-  display: flex; flex-direction: column; gap: 1px;
-  padding-bottom: 6px; border-bottom: 1px solid rgba(0,0,0,0.05);
+  display: flex; flex-direction: column; gap: 2px;
+  padding-bottom: 7px; border-bottom: 1px solid rgba(0,0,0,0.05);
 }
 .hist__list li:last-child { padding-bottom: 0; border-bottom: 0; }
 
+.hist__row { display: flex; align-items: center; gap: 7px; min-width: 0; }
 .hist__who {
-  font-size: 11.5px; font-weight: 700; color: var(--azure);
+  font-size: 11.5px; font-weight: 700; color: var(--azure); min-width: 0;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-.hist__when { font-size: 10.5px; color: var(--fg-4); }
-.hist__kind {
-  align-self: flex-start; margin-top: 2px;
-  font-family: var(--font-heading); font-size: 9px; font-weight: 800;
-  letter-spacing: 0.05em; text-transform: uppercase;
-  background: var(--surface); color: var(--fg-3);
-  padding: 1px 6px; border-radius: 999px;
+.hist__x {
+  flex: none; margin-left: auto;
+  font-family: var(--font-heading); font-size: 10px; font-weight: 800;
+  background: #DFF6F1; color: #00695C;
+  padding: 2px 7px; border-radius: 999px;
 }
+.hist__x--view { background: var(--surface); color: var(--fg-3); }
+
+.hist__when { font-size: 10.5px; color: var(--fg-4); }
 
 /* ------------------------------------------------------------ Empty */
 .empty {

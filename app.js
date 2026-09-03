@@ -69,11 +69,38 @@
     // navigator.sendBeacon("/api/log", JSON.stringify(rec));
   }
 
-  /* Every download of one specific item, newest first. */
+  /* Every event for one specific item, newest first. */
   function historyFor(product, item) {
     return (store.history || [])
       .filter(function (r) { return r.product === product && r.item === item; })
       .sort(function (a, b) { return b.ts.localeCompare(a.ts); });
+  }
+
+  /* Rolled up per person. A raw event list grows without limit — after a
+     busy quarter a popular brochure would show hundreds of rows. Grouped,
+     the list is as long as the team and stays readable forever. */
+  function historySummary(product, item) {
+    var rows = historyFor(product, item);
+    var by = {}, order = [];
+
+    rows.forEach(function (r) {
+      var who = r.email || "";
+      if (!by[who]) { by[who] = { email: who, n: 0, views: 0, last: r.ts }; order.push(who); }
+      var p = by[who];
+      if (r.kind === "viewed") p.views++; else p.n++;
+      if (r.ts > p.last) p.last = r.ts;
+    });
+
+    // rows are newest-first, so first appearance is the most recent activity
+    var people = order.map(function (w) { return by[w]; });
+
+    return {
+      total: rows.length,
+      downloads: rows.filter(function (r) { return r.kind !== "viewed"; }).length,
+      views: rows.filter(function (r) { return r.kind === "viewed"; }).length,
+      people: people,
+      last: rows[0] || null
+    };
   }
 
   function stamp(ts) {
@@ -87,42 +114,61 @@
      to see who else has been sending which brochure. */
   function historyBlock(product, item, compact) {
     if (!can("history")) return "";
-    var rows = historyFor(product, item);
+    var s = historySummary(product, item);
     var key = product + "||" + item;
 
-    if (!rows.length) {
+    if (!s.total) {
       return '<div class="hist hist--none' + (compact ? " hist--compact" : "") + '">' +
         'Not downloaded yet</div>';
     }
 
-    var last = rows[0];
+    var n = s.people.length;
+    var summary = s.downloads
+      ? s.downloads + (s.downloads === 1 ? " download" : " downloads")
+      : s.views + (s.views === 1 ? " view" : " views");
+
     return '<div class="hist' + (compact ? " hist--compact" : "") + '">' +
       '<button class="hist__bar" data-hist="' + esc(key) + '" aria-expanded="false">' +
         '<span class="hist__chev" aria-hidden="true">' +
           '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
           'stroke-width="3" stroke-linecap="round" stroke-linejoin="round">' +
           '<path d="M9 6l6 6-6 6"></path></svg></span>' +
-        '<span class="hist__n">' + rows.length +
-          (rows.length === 1 ? " download" : " downloads") + '</span>' +
-        '<span class="hist__last">' + esc(shortWho(last.email)) + ' · ' + esc(stamp(last.ts)) + '</span>' +
+        '<span class="hist__n">' + summary + '</span>' +
+        '<span class="hist__by">' + n + (n === 1 ? " person" : " people") + '</span>' +
+        '<span class="hist__last">' + esc(relative(s.last.ts)) + '</span>' +
       '</button>' +
       '<ul class="hist__list" hidden>' +
-        rows.map(function (r) {
+        s.people.map(function (p) {
+          var badge = p.n
+            ? '<span class="hist__x">' + p.n + '&times;</span>'
+            : '<span class="hist__x hist__x--view">viewed</span>';
           return '<li>' +
-            '<span class="hist__who" title="' + esc(r.email || "not signed in") + '">' +
-              esc(r.email || "— not signed in —") + '</span>' +
-            '<span class="hist__when">' + esc(stamp(r.ts)) + '</span>' +
-            (r.kind === "viewed" ? '<span class="hist__kind">viewed</span>' : '') +
+            '<span class="hist__row">' +
+              '<span class="hist__who" title="' + esc(p.email || "not signed in") + '">' +
+                esc(p.email || "— not signed in —") + '</span>' +
+              badge +
+            '</span>' +
+            '<span class="hist__when">last ' + esc(stamp(p.last)) +
+              (p.n && p.views ? ' · ' + p.views + ' viewed' : '') + '</span>' +
           '</li>';
         }).join("") +
       '</ul>' +
     '</div>';
   }
 
-  /* Long addresses squeeze the one-line summary — show the name part there. */
-  function shortWho(email) {
-    if (!email) return "not signed in";
-    return email.length > 22 ? email.split("@")[0] : email;
+  /* "2 hours ago" reads faster than a timestamp on the collapsed line; the
+     exact date and time is one click away. */
+  function relative(ts) {
+    var then = new Date(ts).getTime();
+    if (isNaN(then)) return "";
+    var mins = Math.round((Date.now() - then) / 60000);
+    if (mins < 1) return "just now";
+    if (mins < 60) return mins + "m ago";
+    var hrs = Math.round(mins / 60);
+    if (hrs < 24) return hrs + "h ago";
+    var days = Math.round(hrs / 24);
+    if (days < 30) return days + "d ago";
+    return new Date(ts).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
   }
 
   /* ---------- products (catalogue + locally added) ---------- */

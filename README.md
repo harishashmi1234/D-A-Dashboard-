@@ -91,9 +91,9 @@ do not see it at all; their downloads are still recorded.
 ### It only sees this browser
 
 With no server, the hub can log what happens on one machine but cannot collect
-downloads from anyone else's. So the History tab is accurate about *your* usage
-and blind to the rest of the team. It is also not tamper-proof: the log lives
-in `localStorage` and the person being logged can clear it.
+downloads from anyone else's. So each card is accurate about *your* usage and
+blind to the rest of the team. It is also not tamper-proof: the log lives in
+`localStorage` and the person being logged can clear it.
 
 Making it real is a small change — `logDownload()` in `app.js` already builds
 the record; it just needs to POST it somewhere. A Vercel serverless function
